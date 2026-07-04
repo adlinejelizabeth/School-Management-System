@@ -1,0 +1,92 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   // "PRINCIPAL" or "TEACHER"
+  createdAt DateTime @default(now())
+  teacher   Teacher?
+}
+
+model Teacher {
+  id             Int             @id @default(autoincrement())
+  userId         Int             @unique
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone          String?
+  subject        String?         // Primary teaching subject
+  classTeacherOf Class?          @relation("ClassTeacher")
+  timetableSlots TimetableSlot[]
+}
+
+model Class {
+  id             Int             @id @default(autoincrement())
+  name           String          // e.g., "Class 10", "Class 9"
+  division       String          // e.g., "A", "B"
+  classTeacherId Int?            @unique
+  classTeacher   Teacher?        @relation("ClassTeacher", fields: [classTeacherId], references: [id], onDelete: SetNull)
+  students       Student[]
+  timetableSlots TimetableSlot[]
+}
+
+model Student {
+  id         Int          @id @default(autoincrement())
+  name       String
+  rollNumber String?
+  classId    Int
+  class      Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
+  attendance Attendance[]
+  marks      Mark[]
+  fees       Fee[]
+}
+
+model TimetableSlot {
+  id        Int     @id @default(autoincrement())
+  classId   Int
+  class     Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacherId Int
+  teacher   Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  dayOfWeek String  // e.g., "Monday", "Tuesday", etc.
+  startTime String  // e.g., "09:00"
+  endTime   String  // e.g., "10:00"
+  subject   String
+}
+
+model Attendance {
+  id        Int     @id @default(autoincrement())
+  studentId Int
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  date      String  // YYYY-MM-DD
+  status    String  // "PRESENT", "ABSENT", "LATE"
+}
+
+model Mark {
+  id            Int     @id @default(autoincrement())
+  studentId     Int
+  student       Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject       String
+  examName      String  // "Quarterly", "Midterm", "Final"
+  marksObtained Float
+  maxMarks      Float
+}
+
+model Fee {
+  id        Int     @id @default(autoincrement())
+  studentId Int
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  term      String  // "Term 1", "Term 2", "Annual"
+  amount    Float
+  dueDate   String  // YYYY-MM-DD
+  status    String  // "PAID", "UNPAID"
+  paidDate  String? // YYYY-MM-DD
+}
